@@ -19,10 +19,10 @@ import express from "express";
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
+  destination: function (_req: any, _file: any, cb: any) {
     cb(null, 'uploads/')
   },
-  filename: function (req, file, cb) {
+  filename: function (_req: any, file: any, cb: any) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname))
   }

@@ -72,6 +72,7 @@ export default function ShopCatalog() {
     stone: '',
     weight: '',
   });
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     fetchShopData();
@@ -222,6 +223,40 @@ export default function ShopCatalog() {
       }
     } catch (error) {
       console.error('Failed to save product:', error);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'imageUrl' | number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${sessionId}`,
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        const { imageUrl } = await response.json();
+        if (field === 'imageUrl') {
+          setProductForm({ ...productForm, imageUrl });
+        } else {
+          const newSubImages = [...productForm.subImages];
+          newSubImages[field] = imageUrl;
+          setProductForm({ ...productForm, subImages: newSubImages });
+        }
+      }
+    } catch (error) {
+      console.error('Image upload failed:', error);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -431,13 +466,27 @@ export default function ShopCatalog() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="imageUrl">Image URL *</Label>
-              <Input
-                id="imageUrl"
-                value={productForm.imageUrl}
-                onChange={(e) => setProductForm({ ...productForm, imageUrl: e.target.value })}
-                className="border-amber-200"
-                data-testid="input-imageurl"
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="imageUrl"
+                  value={productForm.imageUrl}
+                  onChange={(e) => setProductForm({ ...productForm, imageUrl: e.target.value })}
+                  className="border-amber-200"
+                  data-testid="input-imageurl"
+                />
+                <div className="relative">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e, 'imageUrl')}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-[100px]"
+                    disabled={isUploading}
+                  />
+                  <Button variant="outline" className="border-amber-200" disabled={isUploading}>
+                    {isUploading ? '...' : 'Upload'}
+                  </Button>
+                </div>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="category">Category *</Label>
@@ -472,18 +521,31 @@ export default function ShopCatalog() {
             <div className="space-y-2">
               <Label>Sub Images (up to 4 additional images)</Label>
               {productForm.subImages.map((subImage, index) => (
-                <Input
-                  key={index}
-                  placeholder={`Sub Image ${index + 1} URL`}
-                  value={subImage}
-                  onChange={(e) => {
-                    const newSubImages = [...productForm.subImages];
-                    newSubImages[index] = e.target.value;
-                    setProductForm({ ...productForm, subImages: newSubImages });
-                  }}
-                  className="border-amber-200"
-                  data-testid={`input-subimage-${index}`}
-                />
+                <div key={index} className="flex gap-2">
+                  <Input
+                    placeholder={`Sub Image ${index + 1} URL`}
+                    value={subImage}
+                    onChange={(e) => {
+                      const newSubImages = [...productForm.subImages];
+                      newSubImages[index] = e.target.value;
+                      setProductForm({ ...productForm, subImages: newSubImages });
+                    }}
+                    className="border-amber-200"
+                    data-testid={`input-subimage-${index}`}
+                  />
+                  <div className="relative">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageUpload(e, index)}
+                      className="absolute inset-0 opacity-0 cursor-pointer w-[100px]"
+                      disabled={isUploading}
+                    />
+                    <Button variant="outline" size="sm" className="border-amber-200" disabled={isUploading}>
+                      {isUploading ? '...' : 'Upload'}
+                    </Button>
+                  </div>
+                </div>
               ))}
             </div>
 
