@@ -13,11 +13,29 @@ import {
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
 import { scrapeIBJARates } from "./ibja-scraper";
+import multer from "multer";
+import path from "path";
+import express from "express";
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/')
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname))
+  }
+});
+
+const upload = multer({ storage: storage });
 
 // In-memory session storage (replace with proper session management in production)
 const sessions = new Map<string, string>(); // sessionId -> userId
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Serve uploaded files statically
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
   // Connect to MongoDB before registering routes
   try {
     await connectToMongoDB();
@@ -342,6 +360,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ message: "Failed to delete product" });
     }
+  });
+
+  // Image upload endpoint
+  app.post("/api/upload", requireAuth, upload.single('image'), (req: any, res) => {
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+    
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const host = req.get('host');
+    const imageUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+    
+    res.json({ imageUrl });
   });
 
   const httpServer = createServer(app);
