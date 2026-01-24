@@ -40,13 +40,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setSessionId(storedSessionId);
             setUser(userData);
           } else {
-            localStorage.removeItem('sessionId');
-            setSessionId(null);
+            // Only clear if we explicitly got a 401/403
+            if (response.status === 401 || response.status === 403) {
+              localStorage.removeItem('sessionId');
+              setSessionId(null);
+            }
           }
         } catch (error) {
           console.error('Auth check failed:', error);
-          localStorage.removeItem('sessionId');
-          setSessionId(null);
+          // Don't clear on network errors, only on explicit auth failure
         }
       }
       setIsLoading(false);
