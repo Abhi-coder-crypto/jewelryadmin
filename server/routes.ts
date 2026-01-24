@@ -370,11 +370,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     console.log(`✅ File uploaded successfully: ${req.file.filename} (${req.file.size} bytes)`);
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
-    const host = req.get('host');
-    const imageUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+    const imageUrl = `/uploads/${req.file.filename}`;
     
-    console.log(`🔗 Image URL generated: ${imageUrl}`);
+    console.log(`🔗 Image path generated: ${imageUrl}`);
     res.json({ imageUrl });
   });
 
