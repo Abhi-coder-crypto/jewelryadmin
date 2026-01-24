@@ -64,7 +64,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Middleware to check authentication
   const requireAuth = (req: any, res: any, next: any) => {
     const sessionId = req.headers.authorization?.replace("Bearer ", "");
+    console.log(`[auth] checking sessionId: ${sessionId?.substring(0, 8)}...`);
     if (!sessionId || !sessions.has(sessionId)) {
+      console.log(`[auth] unauthorized: ${sessionId ? "invalid session" : "missing session"}`);
       return res.status(401).json({ message: "Unauthorized" });
     }
     req.userId = sessions.get(sessionId);

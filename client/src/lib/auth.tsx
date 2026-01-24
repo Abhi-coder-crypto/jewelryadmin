@@ -26,16 +26,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const checkAuth = async () => {
-      if (sessionId) {
+      const storedSessionId = localStorage.getItem('sessionId');
+      if (storedSessionId && !user) {
         try {
           const response = await fetch('/api/auth/me', {
             headers: {
-              Authorization: `Bearer ${sessionId}`,
+              Authorization: `Bearer ${storedSessionId}`,
             },
           });
 
           if (response.ok) {
             const userData = await response.json();
+            setSessionId(storedSessionId);
             setUser(userData);
           } else {
             localStorage.removeItem('sessionId');
@@ -51,6 +53,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     checkAuth();
+  }, []); // Run once on mount
+
+  // Sync sessionId state to localStorage
+  useEffect(() => {
+    if (sessionId) {
+      localStorage.setItem('sessionId', sessionId);
+    } else {
+      localStorage.removeItem('sessionId');
+    }
   }, [sessionId]);
 
   const login = async (email: string, password: string) => {
