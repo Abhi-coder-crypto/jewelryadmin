@@ -142,7 +142,7 @@ export default function ShopCatalog() {
         originalPrice: product.originalPrice || 0,
         imageUrl: product.imageUrl,
         category: product.category,
-        tags: product.tags.join(', '),
+        tags: Array.isArray(product.tags) ? product.tags.join(', ') : '',
         inStock: product.inStock,
         displayOrder: product.displayOrder,
         subImages: [
@@ -190,7 +190,7 @@ export default function ShopCatalog() {
     try {
       const productData = {
         ...productForm,
-        tags: productForm.tags.split(',').map(t => t.trim()).filter(t => t),
+        tags: (productForm.tags || '').split(',').map(t => t.trim()).filter(t => t),
         price: Number(productForm.price),
         originalPrice: Number(productForm.originalPrice) || undefined,
         displayOrder: Number(productForm.displayOrder),
