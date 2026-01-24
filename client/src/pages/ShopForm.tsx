@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,13 +6,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLocation, useParams } from 'wouter';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Upload, Loader2 } from 'lucide-react';
 
 export default function ShopForm() {
   const [, setLocation] = useLocation();
   const { id } = useParams();
   const { sessionId } = useAuth();
   const isEditing = !!id;
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -26,6 +27,7 @@ export default function ShopForm() {
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (isEditing) {
@@ -56,6 +58,39 @@ export default function ShopForm() {
       }
     } catch (error) {
       console.error('Failed to fetch shop:', error);
+    }
+  };
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setError('');
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${sessionId}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const data = await response.json();
+      setFormData(prev => ({ ...prev, imageUrl: data.imageUrl }));
+    } catch (err: any) {
+      setError('Failed to upload image');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -142,16 +177,34 @@ export default function ShopForm() {
 
               <div className="space-y-2">
                 <Label htmlFor="imageUrl">Shop Image URL *</Label>
-                <Input
-                  id="imageUrl"
-                  name="imageUrl"
-                  type="url"
-                  placeholder="https://example.com/shop-image.jpg"
-                  value={formData.imageUrl}
-                  onChange={handleChange}
-                  required
-                  className="border-amber-200 focus:border-amber-500"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="imageUrl"
+                    name="imageUrl"
+                    type="url"
+                    placeholder="https://example.com/shop-image.jpg"
+                    value={formData.imageUrl}
+                    onChange={handleChange}
+                    required
+                    className="border-amber-200 focus:border-amber-500"
+                  />
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="border-amber-200 hover:bg-amber-50"
+                  >
+                    {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  </Button>
+                </div>
               </div>
 
               <div className="space-y-2">
