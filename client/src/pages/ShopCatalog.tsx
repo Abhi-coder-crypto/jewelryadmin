@@ -230,34 +230,19 @@ export default function ShopCatalog() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setIsUploading(true);
-    const formData = new FormData();
-    formData.append('image', file);
-
-    try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${sessionId}`,
-        },
-        body: formData,
-      });
-
-      if (response.ok) {
-        const { imageUrl } = await response.json();
-        if (field === 'imageUrl') {
-          setProductForm({ ...productForm, imageUrl });
-        } else {
-          const newSubImages = [...productForm.subImages];
-          newSubImages[field] = imageUrl;
-          setProductForm({ ...productForm, subImages: newSubImages });
-        }
+    // Convert to Base64
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      if (field === 'imageUrl') {
+        setProductForm({ ...productForm, imageUrl: base64String });
+      } else {
+        const newSubImages = [...productForm.subImages];
+        newSubImages[field] = base64String;
+        setProductForm({ ...productForm, subImages: newSubImages });
       }
-    } catch (error) {
-      console.error('Image upload failed:', error);
-    } finally {
-      setIsUploading(false);
-    }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleDeleteProduct = async (productId: string) => {
